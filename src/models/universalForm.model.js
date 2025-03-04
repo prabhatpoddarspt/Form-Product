@@ -27,74 +27,32 @@ const tagSchema = new mongoose.Schema(
     },
     validation: {
       type: Map,
-      of: mongoose.Schema.Types.Mixed, // Allow different types (Boolean, String, Number)
+      of: mongoose.Schema.Types.Mixed,
       default: {
-        uppercase: false,    // Should allow uppercase letters (Boolean)
-        lowercase: false,    // Should allow lowercase letters (Boolean)
-        alphanumeric: false, // Should only allow alphanumeric characters (Boolean)
-        minLength: 0,        // Minimum length for the input field (Number)
-        maxLength: 255,      // Maximum length for the input field (Number)
-        email: false,        // Should validate email format (Boolean)
-        number: false,       // Should validate a number format (Boolean)
-        url: false,          // Should validate a URL format (Boolean)
-        regex: '',           // Custom regex pattern for advanced validation (String)
-        whitespace: false,   // Should not allow leading or trailing spaces (Boolean)
-      },
-    },
-    fileUploadValidation: {
-      allowedFileTypes: {
-        type: [String], // Allowed file types, e.g., ['image/jpeg', 'video/mp4']
-        default: [],
-      },
-      maxSize: {
-        type: Number,  // Maximum file size in bytes (e.g., 5MB = 5 * 1024 * 1024)
-        default: 0,
+        type: 'none', // 'none', 'number', 'text', 'regex','file'
+        errorMessage: '',
+        validationLogic: {
+          rule: '', // 'greaterThan', 'lessThan', 'equal', 'range'
+          value: null,
+          minValue: null, // for range
+          maxValue: null, // for range
+          pattern: '',
+          allowedFileTypes: {
+            type: [String], // Allowed file types, e.g., ['image/jpeg', 'video/mp4']
+            default: [],
+          },
+          maxSize: {
+            type: Number,  // Maximum file size in bytes (e.g., 5MB = 5 * 1024 * 1024)
+            default: 0,
+          },
+        },
+   
       },
     },
   },
   { _id: false } // To prevent auto generation of a separate _id for each tag
 );
 
-// Custom validation logic for input type tags
-tagSchema.path('title').validate(function (value) {
-  // Check if type is 'input' and perform validation
-  if (this.type === 'input') {
-    const { uppercase, lowercase, alphanumeric, minLength, maxLength, email, number, url, regex, whitespace } = this.validation;
-
-    if (uppercase && !/[A-Z]/.test(value)) {
-      return false; // Fail if value doesn't contain uppercase
-    }
-    if (lowercase && !/[a-z]/.test(value)) {
-      return false; // Fail if value doesn't contain lowercase
-    }
-    if (alphanumeric && !/^[a-zA-Z0-9]*$/.test(value)) {
-      return false; // Fail if value is not alphanumeric
-    }
-    if (value.length < minLength) {
-      return false; // Fail if the length is less than minLength
-    }
-    if (value.length > maxLength) {
-      return false; // Fail if the length exceeds maxLength
-    }
-    if (email && !/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(value)) {
-      return false; // Fail if value is not a valid email
-    }
-    if (number && isNaN(value)) {
-      return false; // Fail if value is not a valid number
-    }
-    if (url && !/^https?:\/\/[^\s$.?#].[^\s]*$/.test(value)) {
-      return false; // Fail if value is not a valid URL
-    }
-    if (regex && !new RegExp(regex).test(value)) {
-      return false; // Fail if value does not match the custom regex
-    }
-    if (whitespace && /^\s|\s$/.test(value)) {
-      return false; // Fail if value has leading or trailing spaces
-    }
-  }
-
-  return true; // If all conditions are satisfied
-}, 'Validation failed for tag title.');
 
 
 

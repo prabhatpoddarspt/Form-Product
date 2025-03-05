@@ -1,48 +1,146 @@
 import { asyncHandler } from "../util/asyncHandler.js";
 import { ApiError } from "../util/ApiErrors.js";
-import { User } from "../models/user.model.js";
 import { ApiResponse } from "../util/ApiResponse.js";
 import * as common from "../helper/common.js";
+import { sendOTPEmail } from "../helper/mailer.js";
+
 import jwt from "jsonwebtoken";
+import User from "../models/user.model.js";
+import OTP from "../models/otp.model.js";
 
 
-const registerUser = asyncHandler(async (req, res) => {
-    const { fullName, email, username, password} = req.body;
-
-    const existedUser = await User.findOne({
-        $or: [{ username }, { email }],
-    });
-
-    if (existedUser) {
-        throw new ApiError(409, "User with email or username already exists");
-    }
-
-    const user = await User.create({
-        fullName,
-        email,
-        password,
-        username: username.toLowerCase(),
-    });
-
-    const createdUser = await User.findById(user._id).select("-password -refreshToken");
-
-    if (!createdUser) {
-        throw new ApiError(500, "Something went wrong while registering the user");
-    }
-
-    return res.status(201).json(new ApiResponse(200, createdUser, "User registered Successfully"));
-});
-
-const loginUser = asyncHandler(async (req, res) => {
+// Register a new user and send tokens after successful registration
+const register = asyncHandler(async (req, res) => {
     const { email, username, password } = req.body;
 
-    if (!username && !email) {
-        throw new ApiError(400, "Username or email is required");
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res
+                .status(400)
+                .json(new ApiError(400, "User already exists with this email"));
+        }
+
+        // const otp = common.generateOTP();
+
+        // Create user with OTP and other details but without generating tokens yet
+        const user = await User.create({ email, username, password });
+
+
+        // Generate tokens after successful registration
+        const { accessToken, refreshToken } = await common.generateAccessAndRefreshTokensUsers(user._id);
+        const registeredUser = await User.findById(user._id).select("-password -refreshToken");
+
+        const options = {
+            httpOnly: true,
+            secure: true,
+        };
+
+        return res
+            .status(200)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", refreshToken, options)
+            .json(
+                new ApiResponse(
+                    200,
+                    { user: registeredUser, accessToken, refreshToken },
+                    "User registered successfully. Please verify your email with OTP."
+                )
+            );
+    } catch (err) {
+        return res
+            .status(400)
+            .json(new ApiError(400, "Something went wrong during registration"));
+    }
+});
+
+// Send OTP to the user's email for verification
+const sendOtp = asyncHandler(async (req, res) => {
+    const { email, reason, username } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+
+
+        if (user && reason === "Register") {
+            return res
+                .status(404)
+                .json(new ApiError(404, "User already exists"));
+        }
+
+        if (!user && reason === "Login") {
+            return res
+                .status(404)
+                .json(new ApiError(404, "User does not exist"));
+        }
+
+
+
+        // Generate new OTP and send it
+        const otp = common.generateOTP();
+        OTP.create({
+            email: email,
+            otp: otp,
+            otpExpiry: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes from now
+        });
+
+        await sendOTPEmail(email, username, otp);
+
+        return res
+            .status(200)
+            .json(new ApiResponse(200, {}, "OTP sent to your email. Please verify your email with the OTP."));
+    } catch (err) {
+        console.log('err:', err)
+        return res
+            .status(400)
+            .json(new ApiError(400, "Something went wrong while sending OTP"));
+    }
+});
+
+// Verify OTP and activate user
+const verifyOtp = asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+
+    try {
+        const Otp = await OTP.findOne({ email });
+
+
+
+        if (!Otp.verifyOTP(otp)) {
+            return res
+                .status(401)
+                .json(new ApiError(401, "Invalid OTP"));
+        }
+        // Delete the OTP document after successful verification
+        await OTP.findOneAndDelete({ email });
+
+        // Generate tokens for the verified user
+
+        return res
+            .status(200)
+
+            .json(
+                new ApiResponse(
+                    200,
+                    "Email verified successfully"
+                )
+            );
+    } catch (err) {
+        return res
+            .status(400)
+            .json(new ApiError(400, "Something went wrong during OTP verification"));
+    }
+});
+
+
+const login = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email) {
+        throw new ApiError(400, " email is required");
     }
 
-    const user = await User.findOne({
-        $or: [{ username }, { email }],
-    });
+    const user = await User.findOne({ email });
 
     if (!user) {
         throw new ApiError(404, "User does not exist");
@@ -54,13 +152,13 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Invalid user credentials");
     }
 
-    const { accessToken, refreshToken } = await common.generateAccessAndRefreshTokens(user._id);
+    const { accessToken, refreshToken } = await common.generateAccessAndRefreshTokensUsers(user._id);
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
 
     const options = {
-        httpOnly: true,
-        secure: true,
+        httpOnly: false,
+        secure: false,
     };
 
     return res
@@ -112,7 +210,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         }
 
         const options = {
-            httpOnly: true, 
+            httpOnly: true,
             secure: true,
         };
 
@@ -164,12 +262,17 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, user, "Account details updated successfully"));
 });
 
+
+
 export {
-    registerUser,
-    loginUser,
+    register,
+    verifyOtp,
+    sendOtp,
+    login,
     logoutUser,
     refreshAccessToken,
     changeCurrentPassword,
     getCurrentUser,
     updateAccountDetails,
+   
 };

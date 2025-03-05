@@ -1541,23 +1541,17 @@ export const sendForm = (data, email, url, mailSubject, text) => {
     }
   });
 };
-
-export const sendApprovalRequestEmail = (
-  approver,
-  formResponse,
-  approvalFlow
-) => {
-
+export const sendOTPEmail = (email, username, otp) => {
   const mailOptions = {
-    from: "saurabh.pandey@spacetotech.com",
-    to: approver?.userId.toLowerCase(),
-    subject: `Approval Request`,
+    from: process.env.EMAIL_USER,
+    to: email.toLowerCase(),
+    subject: "Verify Your Email - OTP Verification",
     html: `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Approval Request</title>
+    <title>OTP Verification</title>
     <style>
         body {
             margin: 0;
@@ -1566,43 +1560,28 @@ export const sendApprovalRequestEmail = (
             font-size: 14px;
             background-color: #f3f4f6;
         }
-        .btn {
-            background-color: #003593;
-            border: 1px solid #ddd;
-            color: #fff;
-            padding: 8px 15px;
-            text-decoration: none;
-            display: inline-block;
-            min-width: 85px;
-            font-size: 0.85rem;
-        }
-        .btn:hover {
-            background-color: #002060;
-        }
     </style>
 </head>
 <body>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f3f4f6">
+    <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; background-color: #f3f4f6; padding: 20px;">
         <tr>
-            <td align="center">
-                <table cellpadding="0" cellspacing="0" border="0" style="
-              width: 95%;
-              max-width: 800px;
-              background: #ffffff;
-              border: 1px solid #ddd;
-              border-radius: 8px;
-              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-              padding: 20px;
-            ">
+            <td>
+                <table cellpadding="0" cellspacing="0" border="0" style="width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
                     <tr>
-                        <td>
-                            <h1 style="text-align: center; color: #222;">
-                                Approval Request
-                            </h1>
-                            <p>Dear ${approver?.userId},</p>
-                            <p>You have a new approval request for the following form:</p>
-                            <p>Please review the request and provide your approval.</p>
-                            <p><a href="${process.env.APPROVAL_URL}/approval?userId=${approver?.userId}&approvalFlowId=${approvalFlow?._id}" class="btn">Submit Response</a></p>
+                        <td style="padding: 30px;">
+                            <h2 style="margin: 0 0 20px; color: #003593;">Email Verification</h2>
+                            
+                            <p style="margin: 0 0 20px;">Dear ${username},</p>
+                            
+                            <p style="margin: 0 0 20px;">Welcome to Eurekaforbes! To complete your registration, please use the following OTP to verify your email address:</p>
+                            
+                            <div style="background-color: #f8f9fa; padding: 15px; text-align: center; margin: 20px 0; border-radius: 4px;">
+                                <h1 style="margin: 0; color: #003593; letter-spacing: 5px;">${otp}</h1>
+                            </div>
+                            
+                            <p style="margin: 0 0 20px;">This OTP is valid for a limited time. If you did not register for an account, please ignore this email.</p>
+                            
+                            <p style="margin: 0;">Best regards,<br>Eurekaforbes Team</p>
                         </td>
                     </tr>
                 </table>
@@ -1615,9 +1594,9 @@ export const sendApprovalRequestEmail = (
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
-      console.log("Error while sending mail=", error);
+      console.log("Error while sending OTP mail=", error);
     } else {
-      console.log("Mail sent!");
+      console.log("OTP mail sent successfully!");
     }
   });
 };

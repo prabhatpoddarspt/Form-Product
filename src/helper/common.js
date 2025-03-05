@@ -3,6 +3,7 @@ import Admin from "../models/admin.model.js";
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import { ApiError } from "../util/ApiErrors.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -18,6 +19,7 @@ export const generateAccessAndRefreshTokensUsers = async (userId) => {
 
     return { accessToken, refreshToken };
   } catch (error) {
+    console.log('error:', error)
     throw new ApiError(500, "Something went wrong while generating refresh and access token");
   }
 };

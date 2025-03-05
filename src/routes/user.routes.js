@@ -1,5 +1,5 @@
 import { Router } from "express";
-// import * as authController from "../controllers/user.controller.js";
+import * as authController from "../controllers/user.controller.js";
 import * as formController from "../controllers/form.controller.js";
 import * as approvalController from "../controllers/approval.controller.js";
 import * as masterController from "../controllers/master.controller.js";
@@ -13,8 +13,10 @@ import { verifyPermissionToken } from "../middleware/checkPemissionAuth.js";
 
 const router = Router();
 
-// router.post("/register", authController.register);
-// router.post("/login", authController.login);
+router.post("/register", authController.register);
+router.post("/login", authController.login);
+router.post("/verifyOtp", authController.verifyOtp);
+router.post("/sendOtp", authController.sendOtp);
 // router.post("/resetPassword", authController.resetPassword);
 // router.post("/sendOtp", authController.sendOtp);
 // router.post("/verifyOtp", authController.verifyOtp);

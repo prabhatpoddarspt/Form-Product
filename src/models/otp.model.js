@@ -4,34 +4,26 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 const userSchema = new Schema(
     {
-        username: {
-          type: String,
-        },
         email: {
           type: String,
           required: [true, "Please enter an email"],
           index: true,
         },
-        password: {
-          type: String,
-          required: [true, "Please enter a password"],
-          minlength: [6, "Minimum password length is 6 characters"],
+        otp: {
+          type: Number,
+          required: true
         },
-        profileImg: {
-          type: String,
-        },
-   
-        status: {
-          type: Boolean,
-          default: true,
-        },
+        otpExpiry: {
+          type: Date,
+          required: true,
+          default: function() {
+            // OTP expires in 10 minutes
+            return new Date(Date.now() + 10 * 60 * 1000);
+          }
+        }
+ 
     
-        userType: {
-          type: String,
-          enum: ["USER", "ADMIN"],
-          default: "USER",
-        },
-     
+      
       },
       {
         timestamps: true,
@@ -78,6 +70,17 @@ userSchema.methods.generateRefreshToken = function () {
         }
     )
 }
-const User = mongoose.model('User', userSchema);
 
-export default User;
+// Add method to verify if OTP is expired
+userSchema.methods.isOTPExpired = function () {
+    return Date.now() > this.otpExpiry;
+}
+
+// Add method to verify OTP
+userSchema.methods.verifyOTP = function (otp) {
+    return this.otp === otp && !this.isOTPExpired();
+}
+
+const OTP = mongoose.model('OTP', userSchema);
+
+export default OTP;

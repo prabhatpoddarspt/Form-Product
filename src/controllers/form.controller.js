@@ -181,14 +181,14 @@ const avoidDuplicate = asyncHandler(async (req, res) => {
     const {
         complainNo
     } = req.body;
-    
+
     let filter = {};
     filter.deleted = false
 
 
 
     // Aggregation with lookup to join with the Request table
-    const forms = await Form.findOne({ complainNo, deleted: false , status: { $ne: "Declined" } });
+    const forms = await Form.findOne({ complainNo, deleted: false, status: { $ne: "Declined" } });
     if (forms) {
         return res.status(400).json(new ApiError(400, "Order No Already exist"));
     }
@@ -441,41 +441,15 @@ const updateFormOnClick = asyncHandler(async (req, res) => {
 
 const reAssignTask = asyncHandler(async (req, res) => {
 
-    // Find requests assigned to a specific email within a given date range
-    const requests = await Request.find({ currentStep: 2, assignedEmail: "navendu.waghmare@eurekaforbes.com" });
-    console.log('requests:', requests.length)
+    // const array = [[
+    //     { $match: { status: "Pending" } },
+    //     { $count: "total" },
 
-    // Loop through the requests and update each one
-    let updatedRequest;
+    // ]]
 
-    for (let i = 0; i < requests.length; i++) {
-        const request = requests[i];
-        console.log('request Sl No:', requests[i].slNo)
+   Z
 
-
-        // Generate a new token for each request update
-        const token = generatePermissionToken({ id: request._id, email: "mitesh.dama@eurekaforbes.com" });
-
-        // Update the assigned email and the token for the current request
-        updatedRequest = await Request.findByIdAndUpdate(request._id, {
-            assignedEmail: "mitesh.dama@eurekaforbes.com",
-            currentToken: token
-        }, { new: true }).populate("formId");
-        const url = `${process.env.FORM_URL}/approval?token=${token}`;
-        await sendMailByOther(updatedRequest, "mitesh.dama@eurekaforbes.com", url);
-
-    }
-    // const token = generatePermissionToken({ id: request._id, email: "mitesh.dama@eurekaforbes.com" });
-
-    // // Update the assigned email and the token for the current request
-    // updatedRequest = await Request.findByIdAndUpdate(request._id, {
-    //     assignedEmail: "mitesh.dama@eurekaforbes.com",
-    //     currentToken: token
-    // }, { new: true }).populate("formId");
-    // const url = `${process.env.FORM_URL}/approval?token=${token}`;
-    // await sendMailByOther(updatedRequest, "mitesh.dama@eurekaforbes.com", url);
-    // Send a response back to the client
-    return res.status(200).json(new ApiResponse(200, updatedRequest, "Form updated successfully"));
+    return res.status(200).json(new ApiResponse(200, aggregate, "Form updated successfully"));
 });
 
 

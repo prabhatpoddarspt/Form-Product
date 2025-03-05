@@ -28,13 +28,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    refreshToken: {
-      type: String
-    },
+
     userType: {
       type: String,
       enum: ["ADMIN", "SUPER_ADMIN"],
       default: "ADMIN",
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
     },
   },
   {
@@ -71,17 +73,7 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 
-userSchema.methods.generateRefreshToken = function () {
-  return jwt.sign(
-    {
-      _id: this._id,
-    },
-    process.env.REFRESH_TOKEN_SECRET,
-    {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
-    }
-  );
-};
+
 const Admin = mongoose.model("admin", userSchema);
 
 export default Admin;
